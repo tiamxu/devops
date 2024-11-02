@@ -1,0 +1,113 @@
+applist:
+  league-guide-application:
+    serviceid: league-application-guide
+    nodeSelector: { "league": dev }
+    jdkHeapOpt: -Xmx1024m -Xms1024m
+    service:
+    - port: 80
+      name: http
+      targetPort: 8542
+    ports:
+    - containerPort: 8542
+      name: http
+    livenessProbe:
+      failureThreshold: 2
+      tcpSocket:
+        port: 8542
+      initialDelaySeconds: 300
+      periodSeconds: 10
+      successThreshold: 1
+      timeoutSeconds: 30
+    readinessProbe:
+      failureThreshold: 2
+      tcpSocket:          
+        port: 8542
+      initialDelaySeconds: 300
+      periodSeconds: 10
+      successThreshold: 1
+      timeoutSeconds: 30
+
+
+apps:
+  deployment:
+    league-guide-application: league_b74
+global:
+  configs:
+    CONFIG_SERVER_URL: http://nacos.league.xy
+    PROFILES_ACTIVE: DEV
+    CONFIG_SERVER_USER: nacos
+    CONFIG_SERVER_PWDS: nacos
+ # secret: eyJhdXRocyI6eyJyZWdpc3RyeS54eWIyYi5jb20uY24iOnsiYXV0aCI6IlozVmxjM1E2UjNWbGMzUXhNak0wTlE9PSIsInBhc3N3b3JkIjoiR3Vlc3QxMjM0NSIsInVzZXJuYW1lIjoiZ3Vlc3QifX19
+  env:
+  - name: ilogEnvs
+    value: izone,buildNumber
+  - name: CONFIG_SERVER_URL
+    valueFrom:
+      configMapKeyRef:
+        key: CONFIG_SERVER_URL
+        name: global-config
+  - name: CONFIG_SERVER_USER
+    valueFrom:
+      configMapKeyRef:
+        key: CONFIG_SERVER_USER
+        name: global-config
+  - name: CONFIG_SERVER_PWDS
+    valueFrom:
+      configMapKeyRef:
+        key: CONFIG_SERVER_PWDS
+        name: global-config
+  - name: PROFILES_ACTIVE
+    valueFrom:
+      configMapKeyRef:
+        key: PROFILES_ACTIVE
+        name: global-config
+  - name: JAR_BOOT_ARG
+    value: --spring.cloud.nacos.config.fileExtension=yml --spring.cloud.nacos.config.refresh.enabled=true
+  jdkHeapOpt: -Xmx1024m -Xms1024m
+  image:
+    pullsecrets: registry-secret
+    registry: registry.xyb2b.com.cn
+    pullpolicy: IfNotPresent
+
+
+  limits:
+    memory: 2048Mi
+  livenessProbe:
+    failureThreshold: 2
+    httpGet:
+      path: /actuator/info
+      port: 80
+      scheme: HTTP
+    initialDelaySeconds: 120
+    timeoutSeconds: 30
+  ports:
+  - containerPort: 80
+    name: http
+  service:
+    type: ClusterIP
+    port: 80
+    nodePort: null
+  readinessProbe:
+    httpGet:
+      path: /actuator/info
+      port: 80
+      scheme: HTTP
+    initialDelaySeconds: 60
+    timeoutSeconds: 30
+  requests:
+    memory: 256Mi
+  volumeMounts:
+  - mountPath: /opt/jdk
+    name: jdk-path
+  - mountPath: /srv/applogs
+    name: applogs
+  volumes:
+  - hostPath:
+      path: /usr/local/jdk/default
+    name: jdk-path
+  - hostPath:
+      path: /data/applogs
+    name: applogs
+namespace: league
+replicaCount: 1
+versuffix: null

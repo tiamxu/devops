@@ -1,0 +1,99 @@
+{{ if not ( .Values.versuffix ) }}
+
+{{- if .Values.apps -}}
+{{- range $name, $tag := .Values.apps.deployment -}}
+{{- if $tag -}}
+{{- $item := "" -}}
+{{- range $n, $i := $.Values.applist -}}
+{{- if eq $name $n -}}
+{{- $item = $i -}}
+{{- end -}}
+{{- end -}}
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $name }}
+{{- if $.Values.namespace }}
+  namespace: {{ $.Values.namespace }}
+{{- end }}
+spec:
+  ports:
+
+{{ $port := "enable" }}
+{{ if $item }}
+{{- range $item.service }}
+{{- $port = "" }}
+   - port: {{ .port }}
+     name: {{ .name }}
+     targetPort: {{ .targetPort}}
+{{- end }}
+
+{{ end }}
+
+{{ if $port }}
+{{- range $.Values.global.ports }}
+   - port: {{ .containerPort }}
+     name: {{ .name }}
+{{- end }}
+{{ end }}
+
+  selector:
+    app: {{ $name }}
+
+{{ end }}
+---
+{{- end -}}
+{{- end -}}
+{{- end -}}
+
+
+---
+
+{{ if not ( .Values.versuffix ) }}
+
+{{- if .Values.apps -}}
+{{- range $name, $tag := .Values.apps.statefulset -}}
+{{- if $tag -}}
+{{- $item := "" -}}
+{{- range $n, $i := $.Values.applist -}}
+{{- if eq $name $n -}}
+{{- $item = $i -}}
+{{- end -}}
+{{- end -}}
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $name }}
+{{- if $.Values.namespace }}
+  namespace: {{ $.Values.namespace }}
+{{- end }}
+spec:
+  ports:
+
+{{ $port := "enable" }}
+{{ if $item }}
+{{- range $item.ports }}
+    {{ $port = "" }}
+   - port: {{ .containerPort }}
+     name: {{ .name }}
+{{- end }}
+
+{{ end }}
+
+{{ if $port }}
+{{- range $.Values.global.ports }}
+   - port: {{ .containerPort }}
+     name: {{ .name }}
+{{- end }}
+{{ end }}
+
+  selector:
+    app: {{ $name }}
+
+{{ end }}
+---
+{{- end -}}
+{{- end -}}
+{{- end -}}

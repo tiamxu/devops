@@ -1,0 +1,14 @@
+FROM registry.xyb2b.com.cn/base/jdk:1.8.0_101
+ENV JAVA_OPTS="-XX:MaxMetaspaceSize=256M -XX:MetaspaceSize=256M -XX:+UseG1GC -XX:MaxGCPauseMillis=100 -XX:+ParallelRefProcEnabled -XX:ErrorFile=./hs_err_pid%p.log -Xloggc:./gc.log -XX:HeapDumpPath=./ -XX:+PrintGCDetails -XX:+PrintGCDateStamps -XX:+HeapDumpOnOutOfMemoryError -XX:+PrintClassHistogramBeforeFullGC -XX:+PrintClassHistogramAfterFullGC -XX:+PrintGCApplicationConcurrentTime"
+WORKDIR /usr/local/release
+ADD *.jar /usr/local/release
+CMD ["/bin/sh","-c","java  -jar *.jar $JAVA_OPTS \
+     $JDK_HEAP_OPTS \
+     $JAR_BOOT_OPTS \
+     $JAR_BOOT_ARG \
+     --spring.cloud.nacos.config.server-addr=${CONFIG_SERVER_URL} \ 
+     --spring.cloud.nacos.config.namespace=${PROFILES_ACTIVE} \
+     --spring.cloud.nacos.config.group=${CONFIG_GROUP_NAME} \ 
+     --spring.cloud.nacos.config.username=${CONFIG_SERVER_USER} \ 
+     --spring.cloud.nacos.config.password=${CONFIG_SERVER_PWDS}"] 
+

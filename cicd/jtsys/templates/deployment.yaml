@@ -1,0 +1,307 @@
+{{- if .Values.apps -}}
+{{- range $name, $tag := .Values.apps.deployment -}}
+{{- if $tag -}}
+{{- $item := "" -}}
+{{- range $n, $i := $.Values.applist -}}
+{{- if eq $name $n -}}
+{{- $item = $i -}}
+{{- end -}}
+{{- end -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ if $.Values.versuffix }} {{- $name }}-{{ $.Values.versuffix }} {{ else }} {{- $name }} {{ end }}
+{{- if $.Values.namespace }}
+  namespace: {{ $.Values.namespace }}
+{{- end }}
+spec:
+{{- if $item -}}
+{{ if $item.replicaCount }}
+  replicas: {{ $item.replicaCount }}
+{{- else }}
+  replicas: {{ $.Values.replicaCount }}
+{{- end }}
+{{- else }}
+  replicas: {{ $.Values.replicaCount }}
+{{- end }}
+  selector:
+    matchLabels:
+      app: {{ $name }}
+      version: {{ default "default" $.Values.versuffix }}
+  template:
+    metadata:
+{{- if $item }}
+      annotations:
+        izone: {{ default "default" $.Values.versuffix }}
+{{- if $item.annotations }}
+{{ toYaml $item.annotations | indent 8 }}
+
+{{- end -}}
+{{- else }}
+
+      annotations:
+        izone: {{ default "default" $.Values.versuffix }}
+{{- if $.Values.global.annotations }}        
+{{ toYaml $.Values.global.annotations | indent 8 }}
+{{- end -}}
+{{- end }}
+      labels:
+        app: {{ $name }}
+        version: {{ default "default" $.Values.versuffix }}
+    spec:
+      affinity:
+      {{- if $item -}}
+      {{- if $item.nodeSelector }}
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+      {{- range $key, $val := $item.nodeSelector }}
+              - key: {{ $key }}
+                operator: In
+                values:
+                - {{ $val }}
+      {{- end -}}
+      {{- else -}}
+      {{- if $.Values.global.nodeSelector }}
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+      {{- range $key, $val := $.Values.global.nodeSelector }}
+              - key: {{ $key }}
+                operator: In
+                values:
+                - {{ $val }}
+      {{- end -}}            
+      {{- end -}}
+
+      {{- end -}}
+
+      {{- else -}}
+
+      {{- if $.Values.global.nodeSelector }}
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:      
+      {{- range $key, $val := $.Values.global.nodeSelector }}
+              - key: {{ $key }}
+                operator: In
+                values:
+                - {{ $val }}
+      {{- end -}}
+      {{- end -}}   
+      {{ end }}     
+      containers:
+      - env:
+        - name: izone
+          value: {{ $.Values.versuffix }}
+        - name: MY_SERVICE_NAME
+          {{- $servicename := "" -}}
+          {{- if $item -}}
+          {{- $servicename = $item.servicename -}}
+          {{- end }}
+          value: {{ default $name $servicename }}
+        - name: CONFIG_GROUP_NAME
+          {{- $serviceid := "" -}}
+          {{- if $item -}}
+          {{- $serviceid = $item.serviceid -}}
+          {{- end }}
+          value: {{ default $name $serviceid }}
+
+
+{{ if $.Values.global.env }}
+{{- toYaml $.Values.global.env | indent 8 }}
+
+{{ end }}
+
+{{- if $item -}}
+{{- if $item.env -}}
+{{- toYaml $item.env | indent 8 }}
+{{ end -}}
+{{- end -}}
+
+{{- if $item -}}
+{{- if $item.jdkHeapOpt }}
+        - name: JDK_HEAP_OPTS
+          value: {{ $item.jdkHeapOpt }}
+
+{{- else }}
+        - name: JDK_HEAP_OPTS
+          value: {{ $.Values.global.jdkHeapOpt }}      
+{{- end -}}
+{{- else -}}
+
+{{- if $.Values.global.jdkHeapOpt }}
+        - name: JDK_HEAP_OPTS
+          value: {{ $.Values.global.jdkHeapOpt }}
+{{- end -}}
+
+{{- end -}}
+
+
+
+
+
+{{- $t := $tag | toString -}}
+{{ $registryt := "" }}
+{{ $repositoryt := "" }}
+{{- if $item -}}
+{{- if $item.image -}}
+{{- if $item.image.registry -}}
+{{ $registryt = $item.image.registry -}}
+{{end}}
+{{- if $item.image.repository -}}
+{{ $repositoryt = $item.image.repository -}}
+{{end}}
+{{- end -}}
+{{end}}
+{{- $registry := default $.Values.global.image.registry $registryt -}}
+{{- $repositorytt := printf "%s/%s" $.Values.namespace $name -}}
+{{- $repository := default $repositorytt $repositoryt -}}
+{{- printf "image: %s/%s:%s" $registry $repository $t | indent 8}}
+        name: {{ if $.Values.versuffix }} {{- $name }}-{{ $.Values.versuffix }} {{ else }} {{- $name }} {{ end }}
+        ports:
+{{- $ports := "enable" -}}
+{{- if $item -}}
+{{- if $item.ports }}
+{{- $ports = "" }}
+{{ toYaml $item.ports | indent 8 }}
+{{end}}
+{{end}}
+{{ if  $ports }}
+{{ toYaml $.Values.global.ports | indent 8 }}
+{{ end }}
+        livenessProbe:
+{{ $livenessProbe := "enable" }}
+{{ if $item }}
+{{ if $item.livenessProbe }}
+{{ if $item.livenessProbe.disabled}}
+{{ $livenessProbe = "" }}
+{{else}}
+{{ $livenessProbe = "" }}
+{{ toYaml $item.livenessProbe | indent 10 }}
+{{end}}
+{{end}}
+{{end}}
+{{ if $livenessProbe }}
+{{ toYaml $.Values.global.livenessProbe | indent 10 }}
+{{ end }}
+        readinessProbe:
+{{ $readinessProbe := "enable" }}
+{{ if $item }}
+{{ if $item.readinessProbe }}
+{{ if $item.readinessProbe.disabled}}
+{{ $readinessProbe = "" }}
+{{else}}
+{{ $readinessProbe = "" }}
+{{ toYaml $item.readinessProbe | indent 10 }}
+{{end}}
+{{end}}
+{{end}}
+{{ if $readinessProbe }}
+{{ toYaml $.Values.global.readinessProbe | indent 10 }}
+{{ end }}
+        resources:
+          limits:
+
+{{ $limitscpu := "enable" }}
+{{ $limitsmemory := "enable" }}
+{{ if $item }}
+{{ if $item.limits }}
+{{ if $item.limits.disabled }}
+{{ $limitscpu = "" }}
+{{ $limitsmemory = "" }}
+{{else}}
+{{ $limitscpu = "" }}
+{{ $limitsmemory = "" }}
+        {{ if $item.limits.cpu }}
+            cpu: {{ $item.limits.cpu }}
+        {{ end }}
+
+        {{ if $item.limits.memory }}
+            memory: {{ $item.limits.memory }}
+        {{ end }}            
+{{ end }}
+{{ end }}
+{{ end }}
+{{ if or  $limitscpu $limitsmemory }}
+{{ if $.Values.global.limits }}
+{{ if $.Values.global.limits.cpu }}
+            cpu: {{ $.Values.global.limits.cpu }}
+{{ end }}
+{{ if $.Values.global.limits.memory }}
+            memory: {{ $.Values.global.limits.memory }}
+{{ end }}
+{{ end }}
+{{ end }}
+          requests:
+{{ $requestscpu := "enable" }}
+{{ $requestsmemory := "enable" }}
+{{ if $item }}
+{{ if $item.requests }}
+{{ if $item.requests.disabled }}
+{{ $requestscpu = "" }}
+{{ $requestsmemory = "" }}
+{{else}}
+{{ $requestscpu = "" }}
+{{ $requestsmemory = "" }}
+        {{ if $item.requests.cpu }}
+            cpu: {{ $item.requests.cpu }}
+        {{ end }}
+
+        {{ if $item.requests.memory }}
+            memory: {{ $item.requests.memory }}
+        {{ end }}            
+{{ end }}
+{{ end }}
+{{ end }}
+{{ if or  $requestscpu $requestsmemory }}
+{{ if $.Values.global.requests }}
+{{ if $.Values.global.requests.cpu }}
+            cpu: {{ $.Values.global.requests.cpu }}
+{{ end }}
+{{ if $.Values.global.requests.memory }}
+            memory: {{ $.Values.global.requests.memory }}
+{{ end }}
+{{ end }}
+{{ end }}
+        volumeMounts:
+{{- if $.Values.global.volumeMounts }}
+{{ toYaml $.Values.global.volumeMounts | indent 8 }}
+{{- end }}
+{{if $item }}
+{{- if $item.volumeMounts }}
+{{ toYaml $item.volumeMounts | indent 8 }}
+{{end}}
+{{- end }}
+      imagePullSecrets:
+{{ $pullsecrets := "enable" }}
+{{ if $item }}
+{{- if $item.image -}}        
+{{ if $item.image.pullsecrets  }}
+{{ $pullsecrets = "" }}
+{{ printf "- name: %s" $item.image.pullsecrets | indent 8 }}
+{{end}}
+{{end}}
+{{end}}
+
+{{ if $pullsecrets }}
+{{ printf "- name: %s" $.Values.global.image.pullsecrets | indent 8 }}
+{{ end }}
+      volumes:
+{{- if $.Values.global.volumes }}
+{{ toYaml $.Values.global.volumes | indent 6 }}
+{{- end }}
+{{ if $item }}
+{{- if $item.volumeMounts }}
+{{ toYaml $item.volumeMounts | indent 8 }}
+{{- end -}}
+{{- end -}}
+
+
+{{ end }}
+---
+{{ end }}
+{{ end }}

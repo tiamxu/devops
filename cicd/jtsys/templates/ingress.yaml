@@ -1,0 +1,47 @@
+{{- if .Values.ingress -}}
+{{- range $key,$val := .Values.ingress -}}
+{{- if $val.name }}
+{{ $ingressname := $val.name}}
+apiVersion: networking.k8s.io/v1beta1
+kind: Ingress
+metadata:
+  name: ingress-{{ $ingressname }}
+{{- if $.Values.namespace }}
+  namespace: {{ $.Values.namespace }}
+{{- end }}
+  {{- if $val.labels }}
+  labels:
+  {{ toYaml $val.labels | indent 4 }}
+  {{- end }}
+  {{- if $val.annotations }}
+  annotations:
+  {{ toYaml $val.annotations | indent 2 }}
+  {{- end }}
+
+spec:
+{{- if $val.tls }}
+  tls:
+{{ tpl (toYaml $val.tls) $ | indent 4 }}
+{{- end }}
+  rules:
+  {{- if $val.hosts  }}
+  {{- range $val.hosts }}
+  - host: {{ .}}
+    http:
+      paths:
+      {{- range $k := $val.paths -}}
+{{- $extraPaths := $val.extraPaths -}}
+{{ if $extraPaths }}
+{{ toYaml $extraPaths | indent 10 }}
+{{- end }}
+      - path: {{ $k.path }}
+        backend:
+          serviceName: {{ .servicename }}
+          servicePort: {{ default 80 .serviceport }}
+      {{- end }}
+  {{- end }}
+  {{- end }}
+---
+{{- end}}
+{{- end }}
+{{- end }}

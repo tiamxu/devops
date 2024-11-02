@@ -1,0 +1,69 @@
+ingress:
+- name: league-node-supplier
+  annotations:
+    kubernetes.io/ingress.class: nginx
+  labels: {}
+  path: /
+  paths:
+    - path: /
+      servicename: league-node-supplier
+      serviceport: 80
+  port: 9090
+  hosts:
+  - supplier.dev.league.xy
+  extraPaths: []
+
+- name: league-admin
+  annotations:
+    kubernetes.io/ingress.class: nginx
+  labels: {}
+  path: /
+  paths:
+    - path: /
+      servicename: aliance-admin
+      serviceport: 
+  port: 9090
+  hosts:
+  - admin.dev.league.xy
+  - leagueadmin.dev.xyb2b.com
+  extraPaths: []
+
+- name: null
+  annotations:
+    kubernetes.io/ingress.class: nginx
+  labels: {}
+  path: /
+  paths:
+    - path: /
+      servicename: aliance-admin
+      serviceport: 80
+  port: 9090
+  hosts:
+  - admin.dev.league.xy
+  - leagueadmin.dev.xyb2b.com
+  extraPaths: []
+
+
+- name: null
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    # kubernetes.io/tls-acme: "true"
+  labels: {}
+  path: /
+  paths: 
+    - path: /
+      servicename: test-service
+      serviceport: 9090
+  port: 9090
+  pathType: Prefix
+
+  hosts: 
+  - test-example.local
+  - bbb-example.local
+  extraPaths: []
+  tls:
+   - secretName: chart-example-tls
+     hosts:
+       - chart-example.local
+namespace: league
+

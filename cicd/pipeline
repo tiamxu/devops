@@ -1,0 +1,28 @@
+node(XBUILD_LABEL) {
+
+    properties([parameters([
+        string(defaultValue: '', description: '', name: 'XBUILD_TEAM', trim: false),//项目组：architect
+        string(defaultValue: '', description: '', name: 'XBUILD_DEPLOY', trim: false),//项目名：deployment的名字
+        string(defaultValue: '', description: '', name: 'XBUILD_REPO', trim: false),//git地址
+        string(defaultValue: '', description: '', name: 'XBUILD_BRANCHE', trim: false),//代码分支
+        string(defaultValue: '', description: '', name: 'XBUILD_DOCKERTYPE', trim: false),//
+        string(defaultValue: 'scheme', description: '', name: 'XBUILD_SCHEME', trim: false),//环境:/dev/test
+        string(defaultValue: 'gitlab', description: '', name: 'XBUILD_OWNER', trim: false),//账户信息,jenkins凭据
+        string(defaultValue: '', description: '', name: 'XBUILD_ENVTYPE', trim: true),//
+        string(defaultValue: '', description: '', name: 'XBUILD_LABEL', trim: true),//jenkins 节点标签
+        string(defaultValue: 'v1-0-0', description: '', name: 'XBUILD_VERSION', trim: true)//镜像tag
+        
+    ])])
+    stage("Loading")
+        try {
+            sh "curl -o pipeline.groovy http://172.16.16.179/Jenkinsfile"
+        } catch (exc) {
+              echo "[ERROR] load public module error"
+              currentBuild.result = 'FAILURE'
+              return
+    }
+
+    def pipeline = load 'pipeline.groovy'
+    pipeline(params.XBUILD_TEAM,params.XBUILD_DEPLOY,params.XBUILD_SCHEME,params.XBUILD_DOCKERTYPE)
+
+}
